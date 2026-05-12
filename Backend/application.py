@@ -3,13 +3,13 @@ import sys
 import pandas as pd
 from fastapi import FastAPI
 import uvicorn
-from pydantic import BaseModel
+from schema.input_data import Student
 import joblib
 from src.exception import CustomException
 from src.logger import logging
 
 
-application = FastAPI()
+app = FastAPI()
 
 PREPROCESSOR_PATH = os.path.join("artifacts", "preprocessor.pkl")
 MODEL_PATH = os.path.join("artifacts", "model.pkl")
@@ -22,29 +22,14 @@ except Exception as exc:
     raise CustomException(exc, sys)
 
 
-class InputData(BaseModel):
-    gender: str
-    race_ethnicity: str
-    parental_level_of_education: str
-    lunch: str
-    test_preparation_course: str
-    reading_score: int
-    writing_score: int
+
 
 
 @app.post("/predict")
-def predict(data: InputData):
+def predict(data: Student):
     try:
-        payload = {
-            "gender": data.gender,
-            "race/ethnicity": data.race_ethnicity,
-            "parental level of education": data.parental_level_of_education,
-            "lunch": data.lunch,
-            "test preparation course": data.test_preparation_course,
-            "reading score": data.reading_score,
-            "writing score": data.writing_score,
-        }
-        input_df = pd.DataFrame([payload])
+        data = data.model_dump(by_alias=True)
+        input_df = pd.DataFrame([data])
         features = preprocessor.transform(input_df)
         prediction = model.predict(features)
         return {"prediction": int(prediction[0])}
@@ -52,6 +37,14 @@ def predict(data: InputData):
         logging.error("Prediction failed", exc_info=exc)
         raise CustomException(exc, sys)
 
+
+@app.get("/")
+def home():
+    return {"message": "An Api to predict Students Score"}
+
+@app.get("/health")
+def health():
+    return {"status":"ok"}
 
 if __name__ == "__main__":
     uvicorn.run(app)

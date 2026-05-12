@@ -1,26 +1,31 @@
 import os
 import streamlit as st
 import requests
+from Backend.schema.input_data import Student
+from typing import get_args, get_origin, Literal
+from pydantic import BaseModel
+
+def get_literal_values(model: type[BaseModel], field_name: str):
+    field = model.model_fields[field_name]
+    annotation = field.annotation
+
+    if get_origin(annotation) is Literal:
+        return list(get_args(annotation))
+
+    return None
 
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")
 
-gender = st.selectbox("Gender", ["male", "female"])
+gender_val = get_literal_values(Student, "gender")
+race_val = get_literal_values(Student, "race_ethnicity")
+lvl_edu = get_literal_values(Student, "parental_level_of_education")
+
+gender = st.selectbox("Gender", options=gender_val)
 race_ethnicity = st.selectbox(
     "Race/Ethnicity",
-    ["group B", "group C", "group A", "group D", "group E"],
-)
+    race_val)
 
-parental_level_of_education = st.selectbox(
-    "Parents Level of Education",
-    [
-        "bachelor's degree",
-        "some college",
-        "master's degree",
-        "associate's degree",
-        "high school",
-        "some high school",
-    ],
-)
+parental_level_of_education = st.selectbox("Parents Level of Education",lvl_edu) # type: ignore
 
 lunch = st.selectbox("Lunch", ["standard", "free/reduced"])
 test_preparation_course = st.selectbox(
