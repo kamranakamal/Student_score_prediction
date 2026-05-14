@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 from fastapi import FastAPI
 import uvicorn
-from schema.input_data import Student
+from Backend.schema.input_data import Student
 import joblib
 from src.exception import CustomException
 from src.logger import logging
@@ -32,7 +32,12 @@ def predict(data: Student):
         input_df = pd.DataFrame([data])
         features = preprocessor.transform(input_df)
         prediction = model.predict(features)
-        return {"prediction": int(prediction[0])}
+        prediction_value = prediction[0]
+        if prediction_value >= 100:
+            prediction_value = 100
+        elif prediction_value < 0:
+            prediction_value = 0
+        return {"prediction": int(prediction_value)}
     except Exception as exc:
         logging.error("Prediction failed", exc_info=exc)
         raise CustomException(exc, sys)
